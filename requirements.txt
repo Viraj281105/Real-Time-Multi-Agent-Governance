@@ -1,0 +1,65 @@
+# ------------------------------
+# Core Backend
+# ------------------------------
+fastapi==0.115.2
+uvicorn[standard]==0.30.1
+orjson==3.10.3
+
+# ------------------------------
+# Async & Performance
+# ------------------------------
+asyncio==3.4.3
+uvloop==0.19.0 ; sys_platform != 'win32'
+python-dotenv==1.0.1
+
+# ------------------------------
+# Redis (Event Bus)
+# ------------------------------
+redis==5.0.4
+
+# ------------------------------
+# WebSockets & Streaming
+# ------------------------------
+websockets==12.0
+httpx==0.27.0
+
+# ------------------------------
+# Database (PostgreSQL)
+# ------------------------------
+SQLAlchemy==2.0.29
+psycopg2-binary==2.9.9
+alembic==1.13.1
+
+# ------------------------------
+# Data Processing
+# ------------------------------
+pandas==2.2.2
+pyarrow==16.1.0
+numpy==1.26.4
+
+# ------------------------------
+# Agents / ML (lightweight)
+# ------------------------------
+scikit-learn==1.4.1.post1
+onnxruntime==1.18.0
+
+# NOTE: PyTorch will come from:
+# D:\AI_Env\requirements_torch_env.txt
+
+# ------------------------------
+# Optional Monitoring
+# ------------------------------
+psutil==5.9.8
+
+# ------------------------------
+# Logging
+# ------------------------------
+loguru==0.7.2
+
+# ------------------------------
+# Tests & Linting
+# ------------------------------
+pytest==8.1.1
+pytest-asyncio==0.23.5
+black==24.1.1
+ruff==0.3.5
