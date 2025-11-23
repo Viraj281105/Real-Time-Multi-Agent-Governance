@@ -78,9 +78,18 @@ async def redis_listener():
                     else:
                         # fallback: show raw map
                         payload = {k.decode(): v.decode() if isinstance(v, bytes) else v for k, v in fields.items()}
-                    doc = {"stream": stream_name.decode() if isinstance(stream_name, bytes) else stream_name, "id": entry_id, "data": payload}
-                    # send to all websockets
-                    await manager.broadcast(json.dumps(doc))
+                    # decode stream name and entry ID (Redis returns bytes)
+                        stream_name_str = stream_name.decode() if isinstance(stream_name, bytes) else stream_name
+                        entry_id_str = entry_id.decode() if isinstance(entry_id, bytes) else entry_id
+
+                        doc = {
+                            "stream": stream_name_str,
+                            "id": entry_id_str,
+                            "data": payload
+                        }
+
+                        await manager.broadcast(json.dumps(doc))
+
                     last_ids[stream_name] = entry_id
         except Exception as e:
             logger.exception("Redis listener error: {}", e)
