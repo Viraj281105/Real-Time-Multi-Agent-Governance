@@ -1,0 +1,44 @@
+version: "3.8"
+services:
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+  api:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.api
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    ports:
+      - "8000:8000"
+  market_player:
+    image: python:3.11-slim
+    command: ["sleep", "infinity"]
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+  agent_runtime:
+    image: python:3.11-slim
+    command: ["sleep", "infinity"]
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+  governance:
+    image: python:3.11-slim
+    command: ["sleep", "infinity"]
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+  execution:
+    image: python:3.11-slim
+    command: ["sleep", "infinity"]
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
