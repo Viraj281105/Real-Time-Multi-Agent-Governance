@@ -1,0 +1,261 @@
+name: infra
+services:
+  agent_runtime:
+    build:
+      context: D:\Hackathons\Real-Time-Multi-Agent-GovernanceV2\Real-Time-Multi-Agent-Governance
+      dockerfile: infra/Dockerfile.services
+    command:
+      - python
+      - -m
+      - services.agent_runtime.agent_manager
+    container_name: governance_agents
+    depends_on:
+      postgres:
+        condition: service_started
+        required: true
+      redis:
+        condition: service_started
+        required: true
+    environment:
+      DATABASE_URL: postgresql+asyncpg://governance_user:governance_pass@postgres:5432/governance_db
+      LOG_LEVEL: INFO
+      REDIS_URL: redis://redis:6379/0
+    networks:
+      governance_network: null
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: D:\Hackathons\Real-Time-Multi-Agent-GovernanceV2\Real-Time-Multi-Agent-Governance\services
+        target: /app/services
+        bind:
+          create_host_path: true
+      - type: volume
+        source: agent_logs
+        target: /app/logs
+        volume: {}
+  api:
+    build:
+      context: D:\Hackathons\Real-Time-Multi-Agent-GovernanceV2\Real-Time-Multi-Agent-Governance
+      dockerfile: infra/Dockerfile.api
+    container_name: governance_api
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: true
+      redis:
+        condition: service_healthy
+        required: true
+    environment:
+      DATABASE_URL: postgresql+asyncpg://governance_user:governance_pass@postgres:5432/governance_db
+      DB_MAX_OVERFLOW: "20"
+      DB_POOL_SIZE: "10"
+      LOG_LEVEL: INFO
+      REDIS_URL: redis://redis:6379/0
+    networks:
+      governance_network: null
+    ports:
+      - mode: ingress
+        target: 8000
+        published: "8000"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: D:\Hackathons\Real-Time-Multi-Agent-GovernanceV2\Real-Time-Multi-Agent-Governance\services
+        target: /app/services
+        bind:
+          create_host_path: true
+      - type: volume
+        source: api_logs
+        target: /app/logs
+        volume: {}
+  execution:
+    build:
+      context: D:\Hackathons\Real-Time-Multi-Agent-GovernanceV2\Real-Time-Multi-Agent-Governance
+      dockerfile: infra/Dockerfile.services
+    command:
+      - python
+      - -m
+      - services.execution.execution_engine
+    container_name: governance_execution
+    depends_on:
+      postgres:
+        condition: service_started
+        required: true
+      redis:
+        condition: service_started
+        required: true
+    environment:
+      DATABASE_URL: postgresql+asyncpg://governance_user:governance_pass@postgres:5432/governance_db
+      EXEC_LOG: /app/logs/execution.log
+      LOG_LEVEL: INFO
+      REDIS_URL: redis://redis:6379/0
+    networks:
+      governance_network: null
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: D:\Hackathons\Real-Time-Multi-Agent-GovernanceV2\Real-Time-Multi-Agent-Governance\services
+        target: /app/services
+        bind:
+          create_host_path: true
+      - type: volume
+        source: execution_logs
+        target: /app/logs
+        volume: {}
+  governance:
+    build:
+      context: D:\Hackathons\Real-Time-Multi-Agent-GovernanceV2\Real-Time-Multi-Agent-Governance
+      dockerfile: infra/Dockerfile.services
+    command:
+      - python
+      - -m
+      - services.governance.governance_engine
+    container_name: governance_engine
+    depends_on:
+      postgres:
+        condition: service_started
+        required: true
+      redis:
+        condition: service_started
+        required: true
+    environment:
+      DATABASE_URL: postgresql+asyncpg://governance_user:governance_pass@postgres:5432/governance_db
+      LOG_LEVEL: INFO
+      REDIS_URL: redis://redis:6379/0
+    networks:
+      governance_network: null
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: D:\Hackathons\Real-Time-Multi-Agent-GovernanceV2\Real-Time-Multi-Agent-Governance\services
+        target: /app/services
+        bind:
+          create_host_path: true
+      - type: volume
+        source: governance_logs
+        target: /app/logs
+        volume: {}
+  market_player:
+    build:
+      context: D:\Hackathons\Real-Time-Multi-Agent-GovernanceV2\Real-Time-Multi-Agent-Governance
+      dockerfile: infra/Dockerfile.services
+    command:
+      - python
+      - -m
+      - services.market_feed.replay_player
+      - --file
+      - /app/sample.csv
+      - --speed
+      - "1.0"
+    container_name: governance_market_player
+    depends_on:
+      postgres:
+        condition: service_started
+        required: true
+      redis:
+        condition: service_started
+        required: true
+    environment:
+      DATABASE_URL: postgresql+asyncpg://governance_user:governance_pass@postgres:5432/governance_db
+      REDIS_URL: redis://redis:6379/0
+    networks:
+      governance_network: null
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: D:\Hackathons\Real-Time-Multi-Agent-GovernanceV2\Real-Time-Multi-Agent-Governance\services
+        target: /app/services
+        bind:
+          create_host_path: true
+      - type: bind
+        source: D:\Hackathons\Real-Time-Multi-Agent-GovernanceV2\Real-Time-Multi-Agent-Governance\sample.csv
+        target: /app/sample.csv
+        bind:
+          create_host_path: true
+  postgres:
+    container_name: governance_postgres
+    environment:
+      POSTGRES_DB: governance_db
+      POSTGRES_INITDB_ARGS: -E UTF8
+      POSTGRES_PASSWORD: governance_pass
+      POSTGRES_USER: governance_user
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U governance_user -d governance_db
+      timeout: 5s
+      interval: 10s
+      retries: 5
+    image: postgres:15-alpine
+    networks:
+      governance_network: null
+    ports:
+      - mode: ingress
+        target: 5432
+        published: "5432"
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: postgres_data
+        target: /var/lib/postgresql/data
+        volume: {}
+      - type: bind
+        source: D:\Hackathons\Real-Time-Multi-Agent-GovernanceV2\Real-Time-Multi-Agent-Governance\db\init.sql
+        target: /docker-entrypoint-initdb.d/init.sql
+        bind:
+          create_host_path: true
+  redis:
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - allkeys-lru
+    container_name: governance_redis
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      timeout: 3s
+      interval: 10s
+      retries: 5
+    image: redis:7-alpine
+    networks:
+      governance_network: null
+    ports:
+      - mode: ingress
+        target: 6379
+        published: "6379"
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: redis_data
+        target: /data
+        volume: {}
+networks:
+  governance_network:
+    name: infra_governance_network
+    driver: bridge
+volumes:
+  agent_logs:
+    name: infra_agent_logs
+    driver: local
+  api_logs:
+    name: infra_api_logs
+    driver: local
+  execution_logs:
+    name: infra_execution_logs
+    driver: local
+  governance_logs:
+    name: infra_governance_logs
+    driver: local
+  postgres_data:
+    name: infra_postgres_data
+    driver: local
+  redis_data:
+    name: infra_redis_data
+    driver: local
